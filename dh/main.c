@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <gmp.h>
 #include <stdlib.h>
+#include <time.h>
 
 mpz_t prime;
 mpz_t base;
 mpz_t private_key_1;
 mpz_t private_key_2;
 mpz_t public_key;
+mpz_t key;
 FILE *urand;
 
 void init_numbers(void);
@@ -17,10 +19,10 @@ void generate_key(size_t sz, mpz_t result);
 
 int main(void)
 {
-    mpz_t key;
+    clock_t start, end;
 
     init_numbers();
-    mpz_init(key);
+
     urand = fopen("/dev/urandom","r");
     if(NULL == urand)
     {
@@ -28,21 +30,16 @@ int main(void)
         exit(1);
     }
 
-
+    start = clock();
     init_prime(64);
-    gmp_printf ("Prime: %Zd\n", prime);
-    gmp_printf ("Base: %Zd\n", base);
     generate_key(64, private_key_1);
-    gmp_printf ("Private key a: %Zd\n", private_key_1);
     generate_key(64, private_key_2);
-    gmp_printf ("Private key b: %Zd\n", private_key_2);
     mpz_powm(public_key, base, private_key_1, prime);
-    gmp_printf ("Public key A: %Zd\n", public_key);
     mpz_powm(key, public_key, private_key_2, prime);
-    gmp_printf ("Secret key: %Zd\n", key);
-
+    end = clock();
+    gmp_printf ("Prime: %Zd\nBase: %Zd\nPrivate key a: %Zd\nPrivate key b: %Zd\nPublic key A: %Zd\nSecret key: %Zd\n", prime,base,private_key_1, private_key_2, public_key, key);
+    printf("Done in %.2f seconds\n", difftime(end, start)/CLOCKS_PER_SEC);
     fclose(urand);
-    mpz_clear(key);
     clear_numbers();
 
     return 0;
@@ -128,17 +125,8 @@ void init_prime(size_t sz)
     }
     free(random_bytes);
 
-    mpz_set_ui(base, (unsigned long)3);
-    while(mpz_cmp(prime, base) < 0 || mpz_cmp_ui(base, 3) < 0)
-    {
-        mpz_powm(x, base, tmp, prime);
-        if (0 != mpz_cmp_ui(x, 1))
-        {
-            break;
-        }
+    mpz_set_ui(base, (unsigned long)2);
 
-        mpz_add_ui(base, base, 1);
-    }
     mpz_clear(tmp);
     mpz_clear(x);
 }
@@ -147,6 +135,7 @@ void init_prime(size_t sz)
 
 void init_numbers(void)
 {
+    mpz_init(key);
     mpz_init(prime);
     mpz_init(base);
     mpz_init(private_key_1);
@@ -156,6 +145,7 @@ void init_numbers(void)
 
 void clear_numbers(void)
 {
+    mpz_clear(key);
     mpz_clear(prime);
     mpz_clear(base);
     mpz_clear(private_key_1);
